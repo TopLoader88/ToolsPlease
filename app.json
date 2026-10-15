@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "Tip, please",
+    "name": "Tools, Please",
     "slug": "tip-please",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/tip-icon.png",
     "userInterfaceStyle": "light",
@@ -19,7 +19,7 @@
     },
     "android": {
       "package": "com.tipplease.calculator",
-      "versionCode": 1,
+      "versionCode": 2,
       "softwareKeyboardLayoutMode": "resize",
       "blockedPermissions": ["android.permission.ACCESS_BACKGROUND_LOCATION", "android.permission.RECORD_AUDIO"],
       "adaptiveIcon": {
@@ -30,8 +30,8 @@
     },
     "web": {
       "favicon": "./assets/tip-favicon.png",
-      "name": "Tip, please.",
-      "shortName": "Tip, please."
+      "name": "Tools, Please",
+      "shortName": "Tools, Please"
     }
   }
 }

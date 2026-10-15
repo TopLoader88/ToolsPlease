@@ -69,6 +69,6 @@ jobs:
           RELEASE_TAG: ${{ github.ref_name }}
         run: >-
           gh release create "$RELEASE_TAG" tip-please-android.apk
-          --title "Tip, please. $RELEASE_TAG"
+          --title "Tools, Please $RELEASE_TAG"
           --notes "Android preview APK. Download on your phone and install. Uses test signing, not production store signing. Core calculations work offline."
           --prerelease

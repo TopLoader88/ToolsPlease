@@ -1,4 +1,4 @@
-import { useRef, useState, type ComponentProps, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ComponentProps, type ReactNode } from 'react';
 import {
   ActivityIndicator, Keyboard, KeyboardAvoidingView, Linking, Modal, Platform,
   Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View,
@@ -15,6 +15,9 @@ import { calculate, formatMoney, MAX_PEOPLE, parseAmount, parsePercentage } from
 import { findRegion, regions, REVIEWED_DATE, type RegionCode } from './src/regions';
 import { usePreferences } from './src/usePreferences';
 import { SalesTaxPanel } from './src/SalesTaxPanel';
+import { CurrencyConverter } from './src/CurrencyConverter';
+import { TimeCalculator } from './src/TimeCalculator';
+import { calculatorThemes, type CalculatorMode, type CalculatorTheme } from './src/themes';
 
 const colors = {
   ink: '#202624', muted: '#606B65', paper: '#FFFFFF', background: '#F3F6F4',
@@ -36,9 +39,11 @@ function IconButton({ icon, label, onPress, disabled = false }: {
 }
 
 function Calculator({ fontsLoaded }: { fontsLoaded: boolean }) {
-  const styles = makeStyles(fontsLoaded);
   const { preferences, updatePreferences, storageError } = usePreferences();
   const [billText, setBillText] = useState('');
+  const [mode, setMode] = useState<CalculatorMode>('tip');
+  const theme = calculatorThemes[mode];
+  const styles = makeStyles(fontsLoaded, theme);
   const [taxText, setTaxText] = useState('');
   const [excludeTax, setExcludeTax] = useState(false);
   const [people, setPeople] = useState(1);
@@ -60,6 +65,10 @@ function Calculator({ fontsLoaded }: { fontsLoaded: boolean }) {
   const money = (amount: number) => formatMoney(amount, currency, digits);
   const customPercentage = parsePercentage(customText);
   const customSelected = ![15, 18, 20].includes(preferences.percentage);
+
+  useEffect(() => {
+    if (Platform.OS === 'web') document.title = theme.title;
+  }, [theme.title]);
 
   function openPanel(next: Panel) {
     Keyboard.dismiss();
@@ -151,16 +160,16 @@ function Calculator({ fontsLoaded }: { fontsLoaded: boolean }) {
   }
 
   return (
-    <SafeAreaView style={base.safe}>
+    <SafeAreaView style={[base.safe, { backgroundColor: theme.background }]}>
       <StatusBar style="dark" />
       <KeyboardAvoidingView style={base.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.page}>
           <View style={styles.header}>
             <View style={styles.brand}>
-              <View style={styles.brandIcon}><Feather name="percent" size={19} color={colors.green} /></View>
-              <Text accessibilityRole="header" style={styles.brandName}>Tip, please.</Text>
+              <View style={styles.brandIcon}><Feather name={theme.icon} size={19} color={theme.accent} /></View>
+              <Text accessibilityRole="header" style={styles.brandName}>{theme.title}</Text>
             </View>
-            <View style={styles.headerActions}>
+            <View style={[styles.headerActions, mode !== 'tip' && base.hidden]}>
               <IconButton icon="rotate-ccw" label="Clear bill and split" onPress={() => {
                 setBillText(''); setTaxText(''); setExcludeTax(false); setPeople(1);
               }} />
@@ -168,6 +177,25 @@ function Calculator({ fontsLoaded }: { fontsLoaded: boolean }) {
             </View>
           </View>
 
+          <View style={styles.modeRow}>
+            {(['tip', 'time', 'currency'] as const).map(option => (
+              <Pressable key={option} accessibilityRole="tab" accessibilityLabel={`${option === 'tip' ? 'Tip' : option === 'currency' ? 'Currency' : 'Hours'} calculator`}
+                accessibilityState={{ selected: mode === option }}
+                onPress={() => { Keyboard.dismiss(); setMode(option); }}
+                style={({ pressed }) => [styles.modeButton, mode === option && styles.percentActive, pressed && base.pressed]}>
+                <Text style={[styles.modeText, mode === option && styles.percentTextActive]}>
+                  {option === 'tip' ? 'Tip' : option === 'currency' ? 'Currency' : 'Hours'}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+          <View style={mode !== 'currency' && base.hidden}>
+            <CurrencyConverter fontsLoaded={fontsLoaded} />
+          </View>
+          <View style={mode !== 'time' && base.hidden}>
+            <TimeCalculator fontsLoaded={fontsLoaded} />
+          </View>
+          <View style={mode !== 'tip' && base.hidden}>
           <View style={styles.billSection}>
             <Text style={styles.label}>Bill total</Text>
             <View style={[styles.billInputRow, !!billError && styles.invalidInput]}>
@@ -229,9 +257,10 @@ function Calculator({ fontsLoaded }: { fontsLoaded: boolean }) {
           {excludeTax && <Text style={styles.activeNote}>Tip excludes {tax !== null ? money(tax) : '--'} in receipt tax</Text>}
           {!!taxError && <Text accessibilityRole="alert" style={styles.error}>{taxError}</Text>}
           {!!storageError && <Text accessibilityRole="alert" style={styles.error}>{storageError}</Text>}
+          </View>
           <View style={styles.footer}>
             <View style={styles.footerRule} />
-            <Feather name="check" size={14} color={colors.green} />
+            <Feather name="check" size={14} color={theme.accent} />
             <Text style={styles.footerText}>All settled.</Text>
             <View style={styles.footerRule} />
           </View>
@@ -354,6 +383,7 @@ export default function App() {
 
 const base = StyleSheet.create({
   flex: { flex: 1 },
+  hidden: { display: 'none' },
   safe: { flex: 1, backgroundColor: colors.background },
   iconButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 6 },
   pressed: { opacity: 0.65 },
@@ -362,15 +392,18 @@ const base = StyleSheet.create({
   sheet: { width: '100%', maxWidth: 560, maxHeight: '92%', backgroundColor: colors.paper, borderTopLeftRadius: 8, borderTopRightRadius: 8 },
 });
 
-function makeStyles(fontsLoaded: boolean) {
+function makeStyles(fontsLoaded: boolean, theme: CalculatorTheme) {
   const regular = fontsLoaded ? 'Manrope' : undefined;
   const semi = fontsLoaded ? 'ManropeSemi' : undefined;
   const bold = fontsLoaded ? 'ManropeBold' : undefined;
   return StyleSheet.create({
     page: { flexGrow: 1, width: '100%', maxWidth: 480, alignSelf: 'center', backgroundColor: colors.paper, paddingHorizontal: 24, paddingTop: 16, paddingBottom: 24 },
-    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 38 },
+    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 16 },
+    modeRow: { flexDirection: 'row', gap: 8, marginBottom: 30 },
+    modeButton: { flex: 1, minHeight: 48, borderRadius: 6, backgroundColor: theme.background, alignItems: 'center', justifyContent: 'center', padding: 8 },
+    modeText: { fontFamily: semi, fontSize: 14, color: colors.ink },
     brand: { flexDirection: 'row', gap: 9, alignItems: 'center', flexShrink: 1 },
-    brandIcon: { width: 32, height: 32, backgroundColor: colors.mint, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+    brandIcon: { width: 32, height: 32, backgroundColor: theme.surface, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
     brandName: { fontFamily: bold, fontWeight: fontsLoaded ? undefined : '700', fontSize: 19, color: colors.ink, flexShrink: 1 },
     headerActions: { flexDirection: 'row' },
     label: { fontFamily: semi, fontSize: 14, color: colors.muted, marginBottom: 10 },
@@ -382,7 +415,7 @@ function makeStyles(fontsLoaded: boolean) {
     tipSection: { marginBottom: 32 },
     percentRow: { flexDirection: 'row', gap: 8 },
     percentButton: { flex: 1, minWidth: 0, height: 52, backgroundColor: colors.background, borderWidth: 1, borderColor: colors.line, borderRadius: 6, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4 },
-    percentActive: { backgroundColor: colors.green, borderColor: colors.green },
+    percentActive: { backgroundColor: theme.accent, borderColor: theme.accent },
     percentText: { fontFamily: semi, color: colors.ink, fontSize: 19 },
     customText: { fontFamily: semi, color: colors.ink, fontSize: 14 },
     percentTextActive: { color: '#FFFFFF' },
@@ -399,7 +432,7 @@ function makeStyles(fontsLoaded: boolean) {
     activeNote: { fontFamily: regular, color: colors.muted, fontSize: 12, marginTop: 12 },
     error: { fontFamily: regular, color: colors.error, fontSize: 13, lineHeight: 20, marginTop: 8 },
     footer: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingTop: 36, marginTop: 'auto' },
-    footerRule: { height: 1, backgroundColor: colors.line, flex: 1 },
+    footerRule: { height: 1, backgroundColor: theme.border, flex: 1 },
     footerText: { fontFamily: regular, color: colors.muted, fontSize: 12 },
     sheetHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingLeft: 24, paddingRight: 14, paddingTop: 10, paddingBottom: 10, borderBottomWidth: 1, borderColor: colors.line },
     sheetTitle: { fontFamily: bold, fontWeight: fontsLoaded ? undefined : '700', fontSize: 20, color: colors.ink, flex: 1 },

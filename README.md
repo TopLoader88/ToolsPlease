@@ -1,6 +1,20 @@
-# Tip, please.
+# Tools, Please
 
-Android-first tip calculator built with Expo and TypeScript. The opening screen shows the bill, percentage, receipt tip and total. First launch selects 15%; subsequent launches restore the last selected percentage, including custom values and zero.
+Android-first calculator built with Expo and TypeScript. A top switch selects **Tip**, **Hours**, or **Currency**, with Tip selected on launch. The opening tip screen shows the bill, percentage, receipt tip and total. First launch selects 15%; subsequent launches restore the last selected percentage, including custom values and zero. Switching tools preserves the current inputs during the session and never changes the saved tip settings.
+
+Each tab has a matching header title and color theme: **Tip, please.** in green, **Hours, please.** in purple, and **Currency, Converter.** in blue. The active tab, header icon, controls, result cards, and surrounding background use that tool's theme. The browser page title changes with the active tab. The app's Android launcher and web app name are **Tools, Please**; existing Android installations need a newly built APK to show the new name. The package ID, Expo slug, and APK download filename stay unchanged for update continuity.
+
+## Currency and hours tools
+
+**Currency** converts between USD, EUR, GBP, JPY, CAD, AUD, CHF, CNY, INR, MXN, KRW, NZD, SGD and HKD. Choose the source and destination, enter an amount, and press **Get latest rate**. Only the currency pair is sent to the [Frankfurter public API](https://frankfurter.dev/); the amount is not sent. No request is made at launch or just by opening the currency tool. Online rates are daily reference rates, not live bank quotes, and their reference date is displayed. Refresh to request a newer rate. Network failures are shown explicitly; the app never silently substitutes a rate.
+
+Choose **Manual rate** to work offline: enter how many destination units equal **1 source unit**. Rates must be positive, at most 1,000,000, with up to 12 decimal places. Source amounts are limited to 999999.99 (999999 for whole-unit currencies). Conversion uses integer minor units and exact decimal-rate arithmetic, rounding half up once to destination cents or whole yen/won. Estimates exclude fees and bank markups. Changing the pair clears the rate; changing the source currency or swapping also clears the amount to avoid relabeling old money. Identical currencies use 1:1 without a network request. Conversion amounts and rates are not persisted.
+
+**Hours** calculates a shift from start/end times such as `8am` and `5pm`, or `08:00` and `17:00`. The opening day defaults to **9:00 AM to 5:00 PM** with no breaks, for an **8-hour total**. Use **Add break** for each unpaid break, entered in whole minutes; breaks can be edited or removed. For example, 8am to 5pm with a 30-minute lunch and a 15-minute break gives **8h 15m** (8.25 decimal hours). Select **End is next day** explicitly for overnight shifts. Total breaks cannot exceed elapsed time.
+
+Choose **Hours only** for any day to enter a duration without clock times, such as **8 hours**, or **7 hours and 30 minutes**. Enter whole hours and optional whole minutes (0 to 59), up to 24 hours total. This is the duration before breaks; any entered breaks are subtracted just as they are in start/end mode. Each day remembers both sets of inputs while switching modes, but only the selected mode contributes to the total.
+
+Use **Add day** for a weekly calculator with up to seven days. Each day has an independent input mode, times or duration, and breaks. Select a day to edit it, or remove a day you do not need. New days start blank and explicitly contribute zero, keeping the existing weekly total visible. Entering that day's times or hours updates the total immediately. Partially entered or invalid days still show errors and block the total rather than being silently skipped. A completely blank day with no breaks is marked **Not entered (0h)**, not treated as an entered zero-hour shift. The weekly summary lists each day's net time and totals elapsed time, breaks, and net time in hours/minutes and decimal hours. Day labels are sequential entries, not calendar dates, and renumber when a day is removed. Daily shifts are limited to 24 hours, with wall-clock arithmetic only: dates, time zones, and daylight-saving transitions are not calculated. Time inputs are preserved while switching tools during the session but are not persisted across launches.
 
 ## Try it
 
@@ -32,7 +46,7 @@ Private-party purchase mode shows jurisdiction and item-type warnings. It does n
 - All 27 EU members: standard VAT table last checked by Your Europe July 13, 2026. Reduced, product-specific and special-territory rates are not inferred.
 - UK, Japan, Australia, Canada, New Zealand and Singapore: sourced standard-rate and exception guidance.
 - Canada guidance does not replace a province-specific taxability determination.
-- Other locations: manually entered rate and currency, with no invented guidance. The calculator supports currencies with zero, one or two minor-unit decimals; it does not convert exchange rates.
+- Other locations: manually entered rate and currency, with no invented guidance. The sales-tax calculator supports currencies with zero, one or two minor-unit decimals; it does not convert exchange rates. Use the separate Currency tool for conversion.
 
 Every reference shows sources and the app's review date, October 6, 2026. References never automatically fill the rate field. Consult the receipt or applicable tax authority for the exact rate. Full research links and limitations are in [docs/tax-research.md](docs/tax-research.md).
 
