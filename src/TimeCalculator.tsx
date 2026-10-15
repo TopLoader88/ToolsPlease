@@ -3,6 +3,7 @@ import { Keyboard, Pressable, Switch, Text, TextInput, View } from 'react-native
 import { calculateWorkWeek, formatDuration, MAX_WORK_DAYS, type WorkDayInput } from './workTime';
 import { makeToolStyles } from './toolStyles';
 import { calculatorThemes } from './themes';
+import { TimeField } from './TimeField';
 
 interface Day {
   id: number;
@@ -52,7 +53,7 @@ export function TimeCalculator({ fontsLoaded, onScrollToOffset }: {
 
   return <View style={styles.content}>
     <Text accessibilityRole="header" style={styles.title}>Hours calculator</Text>
-    <Text style={styles.note}>Enter start/end times or hours only, subtract unpaid breaks, and add up to seven days for a weekly total.</Text>
+    <Text style={styles.note}>Add each day's hours. Your weekly total updates automatically.</Text>
     <View style={styles.wrap}>
       {days.map((entry, index) => <Pressable key={entry.id} accessibilityRole="tab" accessibilityLabel={`Day ${index + 1}`}
         accessibilityState={{ selected: selectedDay === index }} onPress={() => selectDay(index)}
@@ -90,13 +91,13 @@ export function TimeCalculator({ fontsLoaded, onScrollToOffset }: {
     {day.mode === 'times' ? <>
     <View>
       <Text style={styles.label}>Start time</Text>
-      <TextInput accessibilityLabel="Start time" value={day.startText} onChangeText={startText => updateDay({ startText })}
-        autoCapitalize="characters" autoCorrect={false} maxLength={12} placeholder="9:00 AM" style={styles.input} />
+      <TimeField key={day.id} label="Start time" value={day.startText} onChange={startText => updateDay({ startText })}
+        fontsLoaded={fontsLoaded} />
     </View>
     <View>
       <Text style={styles.label}>End time</Text>
-      <TextInput accessibilityLabel="End time" value={day.endText} onChangeText={endText => updateDay({ endText })}
-        autoCapitalize="characters" autoCorrect={false} maxLength={12} placeholder="5:00 PM" style={styles.input} />
+      <TimeField key={day.id} label="End time" value={day.endText} onChange={endText => updateDay({ endText })}
+        fontsLoaded={fontsLoaded} />
     </View>
     <View style={styles.row}>
       <Text style={[styles.text, styles.grow]}>End is next day</Text>
@@ -104,17 +105,17 @@ export function TimeCalculator({ fontsLoaded, onScrollToOffset }: {
         trackColor={{ false: theme.border, true: theme.accent }} thumbColor="#FFFFFF" />
     </View>
     </> : <>
-      <Text style={styles.note}>Enter the day's duration before breaks. Leave minutes blank for whole hours.</Text>
+      <Text style={styles.note}>Enter hours before breaks.</Text>
       <View style={styles.row}>
         <View style={styles.grow}>
           <Text style={styles.label}>Hours</Text>
           <TextInput accessibilityLabel="Day hours" value={day.hoursText} onChangeText={hoursText => updateDay({ hoursText })}
-            keyboardType="number-pad" maxLength={2} placeholder="8" style={styles.input} />
+            keyboardType="number-pad" maxLength={2} placeholder="Enter hours" style={styles.input} />
         </View>
         <View style={styles.grow}>
           <Text style={styles.label}>Minutes (optional)</Text>
           <TextInput accessibilityLabel="Day minutes" value={day.minutesText} onChangeText={minutesText => updateDay({ minutesText })}
-            keyboardType="number-pad" maxLength={2} placeholder="0" style={styles.input} />
+            keyboardType="number-pad" maxLength={2} placeholder="Optional" style={styles.input} />
         </View>
       </View>
     </>}
@@ -123,7 +124,7 @@ export function TimeCalculator({ fontsLoaded, onScrollToOffset }: {
       {day.breaks.map((item, index) => <View key={item.id} style={[styles.row, { marginBottom: 8 }]}>
         <TextInput accessibilityLabel={`Break ${index + 1} minutes`} value={item.text}
           onChangeText={text => updateDay({ breaks: day.breaks.map(entry => entry.id === item.id ? { ...entry, text } : entry) })}
-          placeholder="30" keyboardType="number-pad" maxLength={4} style={[styles.input, styles.grow]} />
+          placeholder="Minutes" keyboardType="number-pad" maxLength={4} style={[styles.input, styles.grow]} />
         <Pressable accessibilityRole="button" accessibilityLabel={`Remove break ${index + 1}`}
           onPress={() => updateDay({ breaks: day.breaks.filter(entry => entry.id !== item.id) })} style={styles.button}>
           <Text style={styles.buttonText}>Remove</Text>
@@ -135,22 +136,21 @@ export function TimeCalculator({ fontsLoaded, onScrollToOffset }: {
       </Pressable>
     </View>
     {!!error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
-    {empty && <Text style={styles.note}>This day is blank and adds zero to the weekly total. Enter start/end times or choose Hours only.</Text>}
-    <Pressable accessibilityRole="button" accessibilityLabel="Save day and view weekly total" disabled={!!error}
-      style={[styles.button, styles.active, !!error && styles.disabled]} onPress={() => {
+    {empty && <Text style={styles.note}>Enter times or choose Hours only to add this day.</Text>}
+    <Pressable accessibilityRole="button" accessibilityLabel="Save day and view weekly total" disabled={empty || !!error}
+      style={[styles.button, styles.active, (empty || !!error) && styles.disabled]} onPress={() => {
         Keyboard.dismiss();
-        setSaveNotice(empty
-          ? `Day ${selectedDay + 1} is blank and adds zero to the weekly total.`
-          : `Day ${selectedDay + 1} saved for this session.`);
+        setSaveNotice(`Day ${selectedDay + 1} saved for this session.`);
         onScrollToOffset(weeklyTotalOffset.current);
       }}>
       <Text style={[styles.buttonText, styles.activeText]}>Save day & view weekly total</Text>
     </Pressable>
-    <Text style={styles.note}>Totals update automatically as you type. Save day takes you to the weekly summary; entries are kept only for this session.</Text>
+    <Text style={styles.note}>Entries stay in this session only.</Text>
     <View style={styles.result} accessibilityLiveRegion="polite">
-      <Text style={styles.label}>Time after breaks</Text>
-      <Text accessibilityLabel={`Time after breaks ${result ? formatDuration(result.worked) : 'unavailable'}`} style={styles.amount}>
-        {result ? formatDuration(result.worked) : '--'}
+      <Text style={styles.label}>Day {selectedDay + 1} total after breaks</Text>
+      <Text accessibilityLabel={empty ? `No hours entered for day ${selectedDay + 1}`
+        : `Time after breaks ${result ? formatDuration(result.worked) : 'unavailable'}`} style={styles.amount}>
+        {empty ? 'No hours yet' : result ? formatDuration(result.worked) : '--'}
       </Text>
       {result && <>
         <Text style={styles.text}>{day.mode === 'duration' ? 'Before breaks' : 'Elapsed'}: {formatDuration(result.elapsed)}</Text>
@@ -170,7 +170,7 @@ export function TimeCalculator({ fontsLoaded, onScrollToOffset }: {
         <Text style={styles.text}>Total breaks: {formatDuration(week.totals.breakMinutes)}</Text>
         <Text style={styles.note}>Decimal hours: {(week.totals.worked / 60).toFixed(2)}</Text>
       </> : <Text accessibilityRole="alert" style={styles.error}>Fix incomplete or invalid entries to see the weekly total.</Text>}
-      {emptyDays > 0 && <Text style={styles.note}>{emptyDays} blank {emptyDays === 1 ? 'day adds' : 'days add'} zero to this total.</Text>}
+      {emptyDays > 0 && <Text style={styles.note}>{emptyDays} blank {emptyDays === 1 ? 'day is' : 'days are'} not included.</Text>}
       {week.days.map((entry, index) => <Pressable key={days[index].id} accessibilityRole="button"
         accessibilityLabel={`Edit day ${index + 1}`} onPress={() => {
           Keyboard.dismiss();
@@ -179,7 +179,7 @@ export function TimeCalculator({ fontsLoaded, onScrollToOffset }: {
         }} style={styles.option}>
         <Text style={styles.text}>Day {index + 1}</Text>
         <Text style={entry.empty ? styles.note : entry.result ? styles.buttonText : styles.error}>
-          {entry.empty ? 'Not entered (0h)' : entry.result ? formatDuration(entry.result.worked) : 'Needs attention'}
+          {entry.empty ? 'Add hours' : entry.result ? formatDuration(entry.result.worked) : 'Needs attention'}
         </Text>
       </Pressable>)}
     </View>

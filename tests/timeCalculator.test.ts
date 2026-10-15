@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { calculateWorkTime, calculateWorkWeek, formatDuration, MAX_WORK_DAYS, parseBreakMinutes, parseClockTime, parseWorkDuration, type WorkDayInput } from '../src/workTime';
+import { calculateWorkTime, calculateWorkWeek, formatClockTime, formatDuration, MAX_WORK_DAYS, parseBreakMinutes, parseClockTime, parseWorkDuration, type WorkDayInput } from '../src/workTime';
 
 test('clock times accept AM/PM and 24-hour input including noon and midnight', () => {
   for (const [text, expected] of [
@@ -18,6 +18,15 @@ test('8am to 5pm subtracts multiple breaks and formats exact minutes', () => {
   assert.equal(formatDuration(result.worked), '8h 15m');
   assert.equal(result.worked / 60, 8.25);
   assert.equal(calculateWorkTime(480, 1020, [], false).worked, 540);
+});
+
+test('picker selections format and round-trip every minute including noon and midnight', () => {
+  assert.equal(formatClockTime(0), '12:00 AM');
+  assert.equal(formatClockTime(720), '12:00 PM');
+  assert.equal(formatClockTime(540), '9:00 AM');
+  assert.equal(formatClockTime(1020), '5:00 PM');
+  for (let minute = 0; minute < 1440; minute++) assert.equal(parseClockTime(formatClockTime(minute)), minute);
+  for (const minute of [-1, 1440, 2.5, NaN]) assert.throws(() => formatClockTime(minute));
 });
 
 test('overnight shifts require explicit next-day selection', () => {

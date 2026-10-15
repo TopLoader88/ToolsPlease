@@ -2,12 +2,13 @@
   "expo": {
     "name": "Tools, Please",
     "slug": "tip-please",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/tip-icon.png",
     "userInterfaceStyle": "light",
     "plugins": [
       "expo-font",
+      "@react-native-community/datetimepicker",
       ["expo-location", {
         "locationWhenInUsePermission": "Find your country for local tipping guidance only when you request it.",
         "isAndroidBackgroundLocationEnabled": false,
@@ -19,7 +20,7 @@
     },
     "android": {
       "package": "com.tipplease.calculator",
-      "versionCode": 2,
+      "versionCode": 3,
       "softwareKeyboardLayoutMode": "resize",
       "blockedPermissions": ["android.permission.ACCESS_BACKGROUND_LOCATION", "android.permission.RECORD_AUDIO"],
       "adaptiveIcon": {

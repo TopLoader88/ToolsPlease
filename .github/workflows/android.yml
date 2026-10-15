@@ -44,11 +44,11 @@ jobs:
           chmod +x gradlew
           ./gradlew :app:assembleRelease -PreactNativeArchitectures=arm64-v8a,x86_64 --no-daemon
       - name: Name APK
-        run: cp android/app/build/outputs/apk/release/app-release.apk tip-please-android.apk
+        run: cp android/app/build/outputs/apk/release/app-release.apk tools-please-android.apk
       - uses: actions/upload-artifact@v4
         with:
-          name: tip-please-android
-          path: tip-please-android.apk
+          name: tools-please-android
+          path: tools-please-android.apk
           if-no-files-found: error
           retention-days: 30
 
@@ -61,14 +61,14 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: tip-please-android
+          name: tools-please-android
       - name: Publish phone download
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           RELEASE_TAG: ${{ github.ref_name }}
         run: >-
-          gh release create "$RELEASE_TAG" tip-please-android.apk
+          gh release create "$RELEASE_TAG" tools-please-android.apk
           --title "Tools, Please $RELEASE_TAG"
           --notes "Android preview APK. Download on your phone and install. Uses test signing, not production store signing. Core calculations work offline."
           --prerelease

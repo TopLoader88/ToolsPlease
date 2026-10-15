@@ -16,6 +16,12 @@ export function parseBreakMinutes(text: string): number | null {
   return minutes <= 1440 ? minutes : null;
 }
 
+export function formatClockTime(minutes: number): string {
+  if (!Number.isInteger(minutes) || minutes < 0 || minutes >= 1440) throw new Error('Invalid clock time.');
+  const hours = Math.floor(minutes / 60);
+  return `${hours % 12 || 12}:${String(minutes % 60).padStart(2, '0')} ${hours >= 12 ? 'PM' : 'AM'}`;
+}
+
 export function parseWorkDuration(hoursText: string, minutesText: string): number | null {
   const hours = hoursText.trim();
   const minutes = minutesText.trim();
