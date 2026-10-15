@@ -53,6 +53,8 @@ function Calculator({ fontsLoaded }: { fontsLoaded: boolean }) {
   const [locationMessage, setLocationMessage] = useState('');
   const [linkError, setLinkError] = useState('');
   const locationRequest = useRef(0);
+  const pageScroll = useRef<ScrollView>(null);
+  const hoursOffset = useRef(0);
   const region = findRegion(preferences.region);
   const currency = region?.currency ?? 'USD';
   const digits = region?.digits ?? 2;
@@ -163,7 +165,7 @@ function Calculator({ fontsLoaded }: { fontsLoaded: boolean }) {
     <SafeAreaView style={[base.safe, { backgroundColor: theme.background }]}>
       <StatusBar style="dark" />
       <KeyboardAvoidingView style={base.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.page}>
+        <ScrollView ref={pageScroll} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.page}>
           <View style={styles.header}>
             <View style={styles.brand}>
               <View style={styles.brandIcon}><Feather name={theme.icon} size={19} color={theme.accent} /></View>
@@ -192,8 +194,10 @@ function Calculator({ fontsLoaded }: { fontsLoaded: boolean }) {
           <View style={mode !== 'currency' && base.hidden}>
             <CurrencyConverter fontsLoaded={fontsLoaded} />
           </View>
-          <View style={mode !== 'time' && base.hidden}>
-            <TimeCalculator fontsLoaded={fontsLoaded} />
+          <View style={mode !== 'time' && base.hidden} onLayout={event => { hoursOffset.current = event.nativeEvent.layout.y; }}>
+            <TimeCalculator fontsLoaded={fontsLoaded} onScrollToOffset={offset => {
+              pageScroll.current?.scrollTo({ y: hoursOffset.current + offset, animated: true });
+            }} />
           </View>
           <View style={mode !== 'tip' && base.hidden}>
           <View style={styles.billSection}>

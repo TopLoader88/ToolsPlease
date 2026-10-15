@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Pressable, Switch, Text, TextInput, View } from 'react-native';
+import { Keyboard, Pressable, Switch, Text, TextInput, View } from 'react-native';
 import { calculateWorkWeek, formatDuration, MAX_WORK_DAYS, type WorkDayInput } from './workTime';
 import { makeToolStyles } from './toolStyles';
 import { calculatorThemes } from './themes';
@@ -15,15 +15,21 @@ interface Day {
   breaks: { id: number; text: string }[];
 }
 
-export function TimeCalculator({ fontsLoaded }: { fontsLoaded: boolean }) {
+export function TimeCalculator({ fontsLoaded, onScrollToOffset }: {
+  fontsLoaded: boolean;
+  onScrollToOffset: (offset: number) => void;
+}) {
   const theme = calculatorThemes.time;
   const styles = makeToolStyles(fontsLoaded, theme);
   const [days, setDays] = useState<Day[]>([{
     id: 0, mode: 'times', startText: '9:00 AM', endText: '5:00 PM', hoursText: '', minutesText: '', nextDay: false, breaks: [],
   }]);
   const [selectedDay, setSelectedDay] = useState(0);
+  const [saveNotice, setSaveNotice] = useState('');
   const nextDayId = useRef(1);
   const nextBreakId = useRef(1);
+  const dayEditorOffset = useRef(0);
+  const weeklyTotalOffset = useRef(0);
   const day = days[selectedDay];
   const week = calculateWorkWeek(days.map<WorkDayInput>(entry => {
     const breaks = entry.breaks.map(item => item.text);
@@ -35,7 +41,13 @@ export function TimeCalculator({ fontsLoaded }: { fontsLoaded: boolean }) {
   const emptyDays = week.days.filter(entry => entry.empty).length;
 
   function updateDay(patch: Partial<Day>) {
+    setSaveNotice('');
     setDays(current => current.map((entry, index) => index === selectedDay ? { ...entry, ...patch } : entry));
+  }
+
+  function selectDay(index: number) {
+    setSaveNotice('');
+    setSelectedDay(index);
   }
 
   return <View style={styles.content}>
@@ -43,7 +55,7 @@ export function TimeCalculator({ fontsLoaded }: { fontsLoaded: boolean }) {
     <Text style={styles.note}>Enter start/end times or hours only, subtract unpaid breaks, and add up to seven days for a weekly total.</Text>
     <View style={styles.wrap}>
       {days.map((entry, index) => <Pressable key={entry.id} accessibilityRole="tab" accessibilityLabel={`Day ${index + 1}`}
-        accessibilityState={{ selected: selectedDay === index }} onPress={() => setSelectedDay(index)}
+        accessibilityState={{ selected: selectedDay === index }} onPress={() => selectDay(index)}
         style={[styles.button, styles.dayButton, selectedDay === index && styles.active]}>
         <Text style={[styles.buttonText, selectedDay === index && styles.activeText]}>Day {index + 1}</Text>
       </Pressable>)}
@@ -53,17 +65,17 @@ export function TimeCalculator({ fontsLoaded }: { fontsLoaded: boolean }) {
         if (days.length < MAX_WORK_DAYS) {
           const id = nextDayId.current++;
           setDays([...days, { id, mode: 'times', startText: '', endText: '', hoursText: '', minutesText: '', nextDay: false, breaks: [] }]);
-          setSelectedDay(days.length);
+          selectDay(days.length);
         }
       }}>
       <Text style={styles.buttonText}>{days.length === MAX_WORK_DAYS ? '7 days added (maximum)' : '+ Add day'}</Text>
     </Pressable>
-    <View style={styles.row}>
+    <View style={styles.row} onLayout={event => { dayEditorOffset.current = event.nativeEvent.layout.y; }}>
       <Text accessibilityRole="header" style={[styles.label, styles.grow]}>Day {selectedDay + 1}</Text>
       {days.length > 1 && <Pressable accessibilityRole="button" accessibilityLabel={`Remove day ${selectedDay + 1}`}
         style={styles.button} onPress={() => {
           setDays(current => current.filter((_, index) => index !== selectedDay));
-          setSelectedDay(0);
+          selectDay(0);
         }}>
         <Text style={styles.buttonText}>Remove day</Text>
       </Pressable>}
@@ -124,6 +136,17 @@ export function TimeCalculator({ fontsLoaded }: { fontsLoaded: boolean }) {
     </View>
     {!!error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
     {empty && <Text style={styles.note}>This day is blank and adds zero to the weekly total. Enter start/end times or choose Hours only.</Text>}
+    <Pressable accessibilityRole="button" accessibilityLabel="Save day and view weekly total" disabled={!!error}
+      style={[styles.button, styles.active, !!error && styles.disabled]} onPress={() => {
+        Keyboard.dismiss();
+        setSaveNotice(empty
+          ? `Day ${selectedDay + 1} is blank and adds zero to the weekly total.`
+          : `Day ${selectedDay + 1} saved for this session.`);
+        onScrollToOffset(weeklyTotalOffset.current);
+      }}>
+      <Text style={[styles.buttonText, styles.activeText]}>Save day & view weekly total</Text>
+    </Pressable>
+    <Text style={styles.note}>Totals update automatically as you type. Save day takes you to the weekly summary; entries are kept only for this session.</Text>
     <View style={styles.result} accessibilityLiveRegion="polite">
       <Text style={styles.label}>Time after breaks</Text>
       <Text accessibilityLabel={`Time after breaks ${result ? formatDuration(result.worked) : 'unavailable'}`} style={styles.amount}>
@@ -135,8 +158,10 @@ export function TimeCalculator({ fontsLoaded }: { fontsLoaded: boolean }) {
         <Text style={styles.note}>Decimal hours: {(result.worked / 60).toFixed(2)}</Text>
       </>}
     </View>
-    <View style={styles.result} accessibilityLiveRegion="polite">
+    <View style={styles.result} accessibilityLiveRegion="polite"
+      onLayout={event => { weeklyTotalOffset.current = event.nativeEvent.layout.y; }}>
       <Text accessibilityRole="header" style={styles.label}>Weekly total after breaks</Text>
+      {!!saveNotice && <Text accessibilityLiveRegion="polite" style={styles.buttonText}>{saveNotice}</Text>}
       <Text accessibilityLabel={`Weekly total ${week.totals ? formatDuration(week.totals.worked) : 'unavailable'}`} style={styles.amount}>
         {week.totals ? formatDuration(week.totals.worked) : '--'}
       </Text>
@@ -147,7 +172,11 @@ export function TimeCalculator({ fontsLoaded }: { fontsLoaded: boolean }) {
       </> : <Text accessibilityRole="alert" style={styles.error}>Fix incomplete or invalid entries to see the weekly total.</Text>}
       {emptyDays > 0 && <Text style={styles.note}>{emptyDays} blank {emptyDays === 1 ? 'day adds' : 'days add'} zero to this total.</Text>}
       {week.days.map((entry, index) => <Pressable key={days[index].id} accessibilityRole="button"
-        accessibilityLabel={`Edit day ${index + 1}`} onPress={() => setSelectedDay(index)} style={styles.option}>
+        accessibilityLabel={`Edit day ${index + 1}`} onPress={() => {
+          Keyboard.dismiss();
+          selectDay(index);
+          onScrollToOffset(dayEditorOffset.current);
+        }} style={styles.option}>
         <Text style={styles.text}>Day {index + 1}</Text>
         <Text style={entry.empty ? styles.note : entry.result ? styles.buttonText : styles.error}>
           {entry.empty ? 'Not entered (0h)' : entry.result ? formatDuration(entry.result.worked) : 'Needs attention'}
