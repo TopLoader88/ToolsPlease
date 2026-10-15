@@ -30,7 +30,7 @@ jobs:
           npm run check:build
       - name: Export web app
         env:
-          WEB_BASE_PATH: /TipCalculator
+          WEB_BASE_PATH: /ToolsPlease
         run: npm run build:web
       - uses: actions/upload-pages-artifact@v3
         with:

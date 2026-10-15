@@ -22,10 +22,10 @@ assert.equal(workflow.jobs.release.steps.find(step => step.uses === 'actions/dow
 assert.ok(workflow.jobs.release.steps.some(step => step.run?.includes('gh release create "$RELEASE_TAG" tools-please-android.apk')));
 assert.equal(workflow.jobs.release.permissions.contents, 'write');
 const downloads = await readFile('downloads/README.md', 'utf8');
-assert.ok(downloads.includes('https://TopLoader88.github.io/TipCalculator/'));
-assert.ok(downloads.includes(`https://github.com/TopLoader88/TipCalculator/releases/download/v${expo.version}/tools-please-android.apk`));
+assert.ok(downloads.includes('https://TopLoader88.github.io/ToolsPlease/'));
+assert.ok(downloads.includes(`https://github.com/TopLoader88/ToolsPlease/releases/download/v${expo.version}/tools-please-android.apk`));
 const webWorkflow = parse(await readFile('.github/workflows/web.yml', 'utf8'));
-assert.equal(webWorkflow.jobs.build.steps.find(step => step.name === 'Export web app')?.env?.WEB_BASE_PATH, '/TipCalculator');
+assert.equal(webWorkflow.jobs.build.steps.find(step => step.name === 'Export web app')?.env?.WEB_BASE_PATH, '/ToolsPlease');
 assert.equal(webWorkflow.jobs.deploy.permissions.pages, 'write');
 assert.equal(webWorkflow.jobs.deploy.permissions['id-token'], 'write');
 assert.ok(webWorkflow.jobs.build.steps.some(step => step.uses === 'actions/upload-pages-artifact@v3'));

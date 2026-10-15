@@ -24,13 +24,13 @@ Use **Add day** for a weekly calculator with up to seven days. Each day has an i
 
 ### Free iPhone and Browser Testing
 
-Open [the public web calculator](https://TopLoader88.github.io/TipCalculator/) in Safari on iPhone or any modern browser. No account, subscription, Apple developer membership or payment is required. GitHub Pages hosting is free for this public repository.
+Open [Tools, Please](https://TopLoader88.github.io/ToolsPlease/) in Safari on iPhone or any modern browser. The old [TipCalculator address](https://TopLoader88.github.io/TipCalculator/) redirects here, so existing shared iPhone links continue to work. No account, subscription, Apple developer membership or payment is required. GitHub Pages hosting is free for this public repository.
 
 On iPhone, use Safari's **Share > Add to Home Screen** to add a convenient shortcut. This is the browser version, not a native App Store app. Internet is required to load it; offline startup is not guaranteed and no service worker is installed. Browser storage remembers the tip percentage, but clearing site data or private browsing can remove saved settings.
 
 The main calculator, splitting, custom percentages and sales-tax estimates use the shared app code. Browser state lookup uses HTTPS geolocation and offline US boundaries after explicit permission. Automatic country lookup in the tipping-culture panel remains native-only; select a country manually there. This deployment does not change the existing Android APK.
 
-The **Web Preview** workflow deploys on pushes to `main`. `npm run build:web` exports the browser app; set `WEB_BASE_PATH=/TipCalculator` when exporting for this GitHub Pages site. Leave it unset for root-hosted/local exports. The workflow sets it automatically and requires Pages to use GitHub Actions as its build source.
+The **Web Preview** workflow deploys on pushes to `main`. `npm run build:web` exports the browser app; set `WEB_BASE_PATH=/ToolsPlease` when exporting for this GitHub Pages site. Leave it unset for root-hosted/local exports. The workflow sets it automatically and requires Pages to use GitHub Actions as its build source. The separate legacy TipCalculator repository serves only the old-address redirect and compatibility downloads.
 
 Run `npm ci`, then `npm run web -- --port 8086` for the browser preview. The VS Code task **Tip calculator: tax preview** starts the same preview. Android is the distribution target; browser preview does not support automatic country lookup.
 
